@@ -1,113 +1,99 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Mar 19 16:47:22 2017
 
-@author: chchj
-"""
+# coding: utf-8
 
-# Ignore warnings
-import warnings
-warnings.filterwarnings('ignore')
+# In[123]:
 
-# Handle table-like data and matrices
 import numpy as np
 import pandas as pd
-
-# Modelling Algorithms
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.svm import SVC, LinearSVC
-from sklearn.ensemble import RandomForestClassifier , GradientBoostingClassifier
-
-# Modelling Helpers
-from sklearn.preprocessing import Imputer , Normalizer , scale
-from sklearn.cross_validation import train_test_split , StratifiedKFold
-from sklearn.feature_selection import RFECV
-
-# Visualisation
-import matplotlib as mpl
 import matplotlib.pyplot as plt
-import matplotlib.pylab as pylab
 import seaborn as sns
 
-# Configure visualisations
-#%matplotlib inline
-mpl.style.use( 'ggplot' )
-sns.set_style( 'white' )
-pylab.rcParams[ 'figure.figsize' ] = 8 , 6
-def plot_histograms( df , variables , n_rows , n_cols ):
-    fig = plt.figure( figsize = ( 16 , 12 ) )
-    for i, var_name in enumerate( variables ):
-        ax=fig.add_subplot( n_rows , n_cols , i+1 )
-        df[ var_name ].hist( bins=10 , ax=ax )
-        ax.set_title( 'Skew: ' + str( round( float( df[ var_name ].skew() ) , ) ) ) # + ' ' + var_name ) #var_name+" Distribution")
-        ax.set_xticklabels( [] , visible=False )
-        ax.set_yticklabels( [] , visible=False )
-    fig.tight_layout()  # Improves appearance a bit.
-    plt.show()
 
-def plot_distribution( df , var , target , **kwargs ):
-    row = kwargs.get( 'row' , None )
-    col = kwargs.get( 'col' , None )
-    facet = sns.FacetGrid( df , hue=target , aspect=4 , row = row , col = col )
-    facet.map( sns.kdeplot , var , shade= True )
-    facet.set( xlim=( 0 , df[ var ].max() ) )
-    facet.add_legend()
+# In[124]:
 
-def plot_categories( df , cat , target , **kwargs ):
-    row = kwargs.get( 'row' , None )
-    col = kwargs.get( 'col' , None )
-    facet = sns.FacetGrid( df , row = row , col = col )
-    facet.map( sns.barplot , cat , target )
-    facet.add_legend()
+data=pd.read_csv('./train.csv')
+data.head(1)
 
-def plot_correlation_map( df ):
-    corr = titanic.corr()
-    _ , ax = plt.subplots( figsize =( 12 , 10 ) )
-    cmap = sns.diverging_palette( 220 , 10 , as_cmap = True )
-    _ = sns.heatmap(
-        corr, 
-        cmap = cmap,
-        square=True, 
-        cbar_kws={ 'shrink' : .9 }, 
-        ax=ax, 
-        annot = True, 
-        annot_kws = { 'fontsize' : 12 }
-    )
 
-def describe_more( df ):
-    var = [] ; l = [] ; t = []
-    for x in df:
-        var.append( x )
-        l.append( len( pd.value_counts( df[ x ] ) ) )
-        t.append( df[ x ].dtypes )
-    levels = pd.DataFrame( { 'Variable' : var , 'Levels' : l , 'Datatype' : t } )
-    levels.sort_values( by = 'Levels' , inplace = True )
-    return levels
+# In[125]:
 
-def plot_variable_importance( X , y ):
-    tree = DecisionTreeClassifier( random_state = 99 )
-    tree.fit( X , y )
-    plot_model_var_imp( tree , X , y )
-    
-def plot_model_var_imp( model , X , y ):
-    imp = pd.DataFrame( 
-        model.feature_importances_  , 
-        columns = [ 'Importance' ] , 
-        index = X.columns 
-    )
-    imp = imp.sort_values( [ 'Importance' ] , ascending = True )
-    imp[ : 10 ].plot( kind = 'barh' )
-    print (model.score( X , y ))
-    
-train = pd.read_csv("train.csv")
-test    = pd.read_csv("test.csv")
+y=data['Survived']
+pid=data['PassengerId']
+pclass = pd.get_dummies( data.Pclass , prefix='Pclass' )
+sex = pd.get_dummies( data.Sex , prefix='Sex' )
 
-full = train.append( test , ignore_index = True )
-titanic = full[ :891 ]
 
-del train , test
+# In[126]:
 
-print ('Datasets:' , 'full:' , full.shape , 'titanic:' , titanic.shape)
+ma = data['Age'].mean()
+
+
+# In[133]:
+
+temp=data['Age'].fillna(ma)
+child=temp<14
+
+
+# In[134]:
+
+x=pd.concat([pclass,sex,child,data['Fare']],axis=1)
+
+
+# In[135]:
+
+child.head(1)
+
+
+# In[136]:
+
+from sklearn import svm
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+
+train_x, test_x, train_y, test_y = train_test_split(x, y, test_size=0.2, random_state=42)
+
+
+# In[137]:
+
+clf = GradientBoostingClassifier()
+clf.fit(train_x, train_y) 
+y_pred = clf.predict(test_x)
+print accuracy_score(test_y, y_pred)
+
+
+# In[114]:
+
+data=pd.read_csv('./test.csv')
+
+pid=data['PassengerId']
+pclass = pd.get_dummies( data.Pclass , prefix='Pclass' )
+sex = pd.get_dummies( data.Sex , prefix='Sex' )
+ma = data['Age'].mean()
+temp=data['Age'].fillna(ma)
+child=temp<14
+mf = data['Fare'].mean()
+data['Fare']=data['Fare'].fillna(mf)
+x=pd.concat([pclass,sex,child,data['Fare']],axis=1)
+
+
+# In[115]:
+
+y_pred = clf.predict(x)
+
+
+# In[116]:
+
+output=pd.DataFrame( { 'PassengerId': pid , 'Survived': y_pred } )
+
+
+# In[117]:
+
+output.to_csv('./output.csv',index=False)
+
+
+# In[ ]:
+
+
+
